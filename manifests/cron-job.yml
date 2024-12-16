@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: log-cleanup
+  namespace: airflow
+spec:
+  schedule: "0 0 * * 0"  # Exécute le CronJob toutes les minutes pour les tests
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: log-cleanup-container
+            image: alpine
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                LOG_DIR="/mnt/logs"
+                seven_days_ago=$(($(date +%s) - 7*86400))
+                LIMIT_DATE=$(date -u -d @$seven_days_ago +"%Y-%m-%d")
+                echo "Limite de date : $LIMIT_DATE"
+                for dag_dir in "$LOG_DIR"/dag_id=*; do
+                  if [ -d "$dag_dir" ]; then
+                    echo "Traitement de DAG : $(basename "$dag_dir")"
+                    find "$dag_dir" -type d -name "run_id=*" | while read -r run_dir; do
+                      if [ -d "$run_dir" ]; then
+                        run_date=$(basename "$run_dir" | sed -E 's/run_id=(scheduled|manual)__//;s/T.*//')
+                        run_date_timestamp=$(date -u -d "$run_date" +%s)
+                        LIMIT_DATE_timestamp=$(date -u -d "$LIMIT_DATE" +%s)
+                        if [[ "$run_date_timestamp" < "$LIMIT_DATE_timestamp" ]]; then
+                          echo "Suppression de : $run_dir"
+                          rm -rf "$run_dir" || echo "Erreur lors de la suppression de $run_dir"
+                        fi
+                      else
+                        echo "Le répertoire $run_dir n'existe pas."
+                      fi
+                    done
+                  else
+                    echo "Le répertoire $dag_dir n'est pas un dossier valide."
+                  fi
+                done
+                echo "Purge des logs terminée."
+            volumeMounts:
+              - name: airflow-logs
+                mountPath: /mnt/logs
+          restartPolicy: OnFailure
+          volumes:
+            - name: airflow-logs
+              persistentVolumeClaim:
+                claimName: airflow-stable-logs

@@ -1,0 +1,55 @@
+metadata:
+  name: scheduler-log-cleanup
+  namespace: airflow
+spec:
+  schedule: "0 0 * * 0"  # Exécute le CronJob chaque dimanche à minuit
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: scheduler-log-cleanup-container
+            image: alpine
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                #!/bin/sh
+
+                # Répertoire contenant les logs des DAGs
+                LOG_DIR="/mnt/logs/scheduler"
+
+                seven_days_ago=$(($(date +%s) - 7*86400))
+                LIMIT_DATE=$(date -u -d @$seven_days_ago +"%Y-%m-%d")
+                echo "Date limite : $LIMIT_DATE"
+
+                # Purger les logs pour chaque DAG
+                for dag_dir in "$LOG_DIR"/*; do
+                  if [ -d "$dag_dir" ]; then
+                    echo "Traitement de DAG : $(basename "$dag_dir")"
+
+                    run_date=$(basename "$dag_dir")
+                    echo "Date de traitement : $run_date"
+
+                    # Convertir run_date en timestamp
+                    run_date_timestamp=$(date -u -d "$run_date" +%s)
+                    LIMIT_DATE_timestamp=$(date -u -d "$LIMIT_DATE" +%s)
+
+                    # Comparer les timestamps
+                    if [[ "$run_date_timestamp" -lt "$LIMIT_DATE_timestamp" ]]; then
+                      echo "Suppression de : $dag_dir"
+                      rm -rf "$dag_dir" || echo "Erreur lors de la suppression de $dag_dir"
+                    fi
+                  else
+                    echo "Le répertoire $dag_dir n'est pas un dossier valide."
+                  fi
+                done
+
+                echo "Purge des logs terminée."
+            volumeMounts:
+              - name: airflow-logs
+                mountPath: /mnt/logs
+          restartPolicy: OnFailure
+          volumes:
+            - name: airflow-logs
+              persistentVolumeClaim:
+                claimName: airflow-stable-logs
