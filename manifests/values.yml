@@ -1574,15 +1574,10 @@ dags:
     ##
     subPath: ""
 
-    ## the name of the StorageClass used by the PVC
-    ## - if set to "", then `PersistentVolumeClaim/spec.storageClassName` is omitted
-    ## - if set to "-", then `PersistentVolumeClaim/spec.storageClassName` is set to ""
-    ##
+
     storageClass: ""
 
-    ## the access mode of the PVC
-    ## - [WARNING] must be "ReadOnlyMany" or "ReadWriteMany" otherwise airflow pods will fail to start
-    ##
+
     accessMode: ReadOnlyMany
 
     ## the size of PVC to request
@@ -1592,103 +1587,48 @@ dags:
   ## configs for the git-sync sidecar (https://github.com/kubernetes/git-sync)
   ##
   gitSync:
-    ## if the git-sync sidecar container is enabled
-    ##
-    enabled: true
 
-    ## the git-sync container image
-    ##
+    enabled: true  # Active le conteneur git-sync pour synchroniser un dépôt Git à intervalle régulier.
+
     image:
-      repository: registry.k8s.io/git-sync/git-sync
-      tag: v3.6.9
-      pullPolicy: IfNotPresent
-      uid: 65533
-      gid: 65533
+      repository: registry.k8s.io/git-sync/git-sync  # Le dépôt contenant l'image Docker du conteneur git-sync.
+      tag: v3.6.9  # La version spécifique de l'image Docker à utiliser.
+      pullPolicy: IfNotPresent  # L'image sera téléchargée seulement si elle n'est pas déjà présente sur le nœud.
+      uid: 65533  # L'ID utilisateur sous lequel le conteneur git-sync sera exécuté.
+      gid: 65533  # L'ID de groupe sous lequel le conteneur git-sync sera exécuté.
 
-    ## resource requests/limits for the git-sync container
-    ## - spec for ResourceRequirements:
-    ##   https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.29/#resourcerequirements-v1-core
-    ##
-    resources: {}
+    resources: {}  # Spécifie les ressources CPU et mémoire allouées au conteneur. Ici, aucune ressource n'est définie.
 
-    ## the url of the git repo
-    ##
-    ## ____ EXAMPLE _______________
-    ##   # https git repo
-    ##   repo: "https://github.com/USERNAME/REPOSITORY.git"
-    ##
-    ## ____ EXAMPLE _______________
-    ##   # ssh git repo
-    ##   repo: "git@github.com:USERNAME/REPOSITORY.git"
-    ##
-    repo: "https://gitlab_analytics.ocitnetad.ci/airflow/dags_kubernetes.git"
+    repo: "repo git "  # L'URL du dépôt Git à synchroniser.
 
-    ## the sub-path within your repo where dags are located
-    ## - only dags under this path within your repo will be seen by airflow,
-    ##   (note, the full repo will still be cloned)
-    ##
-    repoSubPath: ""
+    repoSubPath: ""  # Le chemin relatif au dépôt Git où les fichiers doivent être synchronisés. Si vide, le dépôt complet est cloné.
 
-    ## the git branch to check out
-    ##
-    branch: galaxy
+    branch: nom de la branche  # La branche Git à utiliser pour la synchronisation.
 
-    ## the git revision (tag or hash) to check out
-    ##
-    revision: HEAD
+    revision: HEAD  # La révision (commit, tag ou hash) du dépôt à vérifier. Ici, `HEAD` fait référence à la dernière révision de la branche.
 
-    ## shallow clone with a history truncated to the specified number of commits
-    ##
-    depth: 1
+    depth: 1  # Utilisation du clonage superficiel, avec un historique limité à 1 commit.
 
-    ## the number of seconds between syncs
-    ##
-    syncWait: 10
+    syncWait: 10  # Le délai en secondes entre chaque synchronisation du dépôt Git.
 
-    ## the max number of seconds allowed for a complete sync
-    ##
-    syncTimeout: 120
+    syncTimeout: 120  # Le délai maximal en secondes autorisé pour une opération de synchronisation avant que celle-ci ne soit considérée comme échouée.
 
-    ## the git submodule behavior
-    ## - allowed values: "recursive", "shallow", "off"
-    ##
-    submodules: recursive
+    submodules: recursive  # Permet de cloner les sous-modules Git de manière récursive.
 
-    ## the name of a pre-created Secret with git http credentials
-    ##
-    httpSecret:  git-credentials-dags
+    httpSecret: git-credentials-dags  # Le secret Kubernetes contenant les informations d'identification pour accéder au dépôt Git (via HTTP).
 
-    ## the key in `dags.gitSync.httpSecret` with your git username
-    ##
-    httpSecretUsernameKey: GIT_SYNC_USERNAME
+    httpSecretUsernameKey: GIT_SYNC_USERNAME  # La clé dans le secret Kubernetes pour le nom d'utilisateur Git.
 
-    ## the key in `dags.gitSync.httpSecret` with your git password/token
-    ##
-    httpSecretPasswordKey: GIT_SYNC_PASSWORD
+    httpSecretPasswordKey: GIT_SYNC_PASSWORD  # La clé dans le secret Kubernetes pour le mot de passe Git.
 
-    ## the name of a pre-created Secret with git ssh credentials
-    ##
-    sshSecret: ""
+    sshSecret: ""  # Secret SSH à utiliser pour l'authentification par clé publique. Non utilisé ici (vide).
 
-    ## the key in `dags.gitSync.sshSecret` with your ssh-key file
-    ##
-    sshSecretKey: id_rsa
+    sshSecretKey: ""  # La clé de secret SSH, non utilisée ici puisque `sshSecret` est vide.
 
-    ## the string value of a "known_hosts" file (for SSH only)
-    ## - [WARNING] known_hosts verification will be disabled if left empty, making you more
-    ##   vulnerable to repo spoofing attacks
-    ##
-    ## ____ EXAMPLE _______________
-    ##   sshKnownHosts: |-
-    ##     <HOST_NAME> ssh-rsa <HOST_KEY>
-    ##
-    sshKnownHosts: ""
+    sshKnownHosts: ""  # Liste des hôtes SSH connus. Non utilisée ici (vide).
 
-    ## the number of consecutive failures allowed before aborting
-    ##  - the first sync must succeed
-    ##  - a value of -1 will retry forever after the initial sync
-    ##
-    maxFailures: 0
+    maxFailures: 0  # Le nombre maximal d'échecs autorisés avant que le processus de synchronisation soit désactivé. Ici, aucun échec n'est permis.
+
 
 ###################################
 ## CONFIG | Kubernetes Ingress
