@@ -10,7 +10,7 @@ airflow:
   ## configs for the airflow container image
   ##
   image:
-    repository: harbor-registry.ocitnetad.ci/airflow-galaxy/airflow-galaxy
+    repository: image-custum
     tag: V0.0.2
     pullPolicy: IfNotPresent
     pullSecret: ""
